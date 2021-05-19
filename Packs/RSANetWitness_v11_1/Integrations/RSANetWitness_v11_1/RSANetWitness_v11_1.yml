@@ -613,6 +613,7 @@ script:
   longRunningPort: false
   runonce: false
   script: '-'
+  dockerimage: demisto/python:2.7.18.19851
   subtype: python2
   type: python
 tests:

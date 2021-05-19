@@ -1,6 +1,4 @@
-import demistomock as demisto
 from CommonServerPython import *
-from CommonServerUserPython import *
 
 """
 
@@ -68,11 +66,22 @@ def get_token_request(username, password):
     response = requests.post(url, headers=get_token_headers, data=username_password, verify=USE_SSL)
 
     # successful get_token
-    if response.status_code == 200:
-        return response.json()
-    # bad request - NetWitness returns a common json structure for errors
-    error_lst = response.json().get('errors')
-    raise ValueError('get_token failed with status: {}\n{}'.format(response.status_code, dict_list_to_str(error_lst)))
+    try:
+        response_json = response.json()
+    except ValueError:
+        raise ValueError(
+            'Could not find a JSON in the response from RSANetWitness v11.1.'
+            'status code: {}.'
+            'text: {}'.format(response.status_code, response.text)
+        )
+    else:
+        if response.ok:
+            return response_json
+        # bad request - NetWitness returns a common json structure for errors
+        error_lst = response_json.get('errors')
+        raise ValueError(
+            'get_token failed with status: {}\n{}'.format(response.status_code, dict_list_to_str(error_lst))
+        )
 
 
 def get_token():
@@ -103,7 +112,7 @@ GLOBAL VARS
 
 """
 SERVER_URL = demisto.params()['server']
-BASE_PATH = '{}/rest/api'.format(SERVER_URL)
+BASE_PATH = urljoin(SERVER_URL, '/rest/api')
 USERNAME = demisto.params()['credentials']['identifier']
 PASSWORD = demisto.params()['credentials']['password']
 USE_SSL = not demisto.params()['insecure']
